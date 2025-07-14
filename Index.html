@@ -1,1 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Perfect Heart</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
+let particles = [];
+const heartScale = 12;
+let mouse = { x: null, y: null, radius: 60 };
+
+// Perfect heart parametric formula
+function heartFunction(t) {
+  return {
+    x: 16 * Math.pow(Math.sin(t), 3),
+    y: 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)
+  };
+}
+
+// Fill the inside of heart with particles
+for (let t = 0; t < Math.PI * 2; t += 0.05) {
+  for (let r = 0.1; r < 1; r += 0.05) {
+    let point = heartFunction(t);
+    let x = point.x * r;
+    let y = point.y * r;
+
+    const px = canvas.width / 2 + x * heartScale;
+    const py = canvas.height / 2 - y * heartScale;
+
+    particles.push({
+      x: px,
+      y: py,
+      baseX: px,
+      baseY: py,
+      vx: 0,
+      vy: 0,
+      size: 1.5 + Math.random()
+    });
+  }
+}
+
+function animate() {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let p of particles) {
+    let dx = p.x - mouse.x;
+    let dy = p.y - mouse.y;
+    let dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < mouse.radius && mouse.x !== null && mouse.y !== null) {
+      let angle = Math.atan2(dy, dx);
+      let force = (mouse.radius - dist) / mouse.radius;
+      let moveX = Math.cos(angle) * force * 10;
+      let moveY = Math.sin(angle) * force * 10;
+      p.vx += moveX;
+      p.vy += moveY;
+    }
+
+    // return to original point
+    p.vx += (p.baseX - p.x) * 0.02;
+    p.vy += (p.baseY - p.y) * 0.02;
+
+    p.vx *= 0.9;
+    p.vy *= 0.9;
+
+    p.x += p.vx;
+    p.y += p.vy;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = "white";
+    ctx.fill();
+  }
+
+  requestAnimationFrame(animate);
+}
+
+// Touch/mouse controls
+window.addEventListener("mousemove", e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+window.addEventListener("touchmove", e => {
+  mouse.x = e.touches[0].clientX;
+  mouse.y = e.touches[0].clientY;
+});
+window.addEventListener("mouseleave", () => {
+  mouse.x = null;
+  mouse.y = null;
+});
+window.addEventListener("touchend", () => {
+  mouse.x = null;
+  mouse.y = null;
+});
+
+animate();
+</script>
+</body>
+</html>
